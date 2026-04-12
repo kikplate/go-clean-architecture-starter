@@ -1,0 +1,42 @@
+# Development
+
+## Requirements
+
+- Go 1.23 or newer (see `go.mod`)
+- PostgreSQL 16 compatible server (for integration tests and local runs outside Docker)
+
+## Module path
+
+The module is `github.com/kikplate-plates/go-clean-architecture-starter`. After you copy the template into your own repository, run a mechanical rename of the import path (for example with your editor’s replace-in-files) and then:
+
+```bash
+go mod edit -module github.com/yourorg/yourrepo
+go mod tidy
+```
+
+## Tests
+
+```bash
+make test
+```
+
+Package tests cover configuration, domain rules, use cases, and HTTP behavior without a real database where possible.
+
+PostgreSQL repository tests in `internal/repository/postgres` run only when `DATABASE_URL` is set. In GitHub Actions the workflow provides Postgres as a service and sets `DATABASE_URL` so those tests execute on every push and pull request.
+
+To run them locally:
+
+```bash
+export DATABASE_URL='postgres://app:app@localhost:5432/app?sslmode=disable'
+go test -race ./...
+```
+
+## Continuous integration
+
+Workflow: `.github/workflows/ci.yml`. It installs Go, starts Postgres, downloads modules, and runs `go test -race ./...`.
+
+## Suggested next steps for contributors
+
+- Add `golangci-lint` configuration consistent with your team.
+- Replace startup DDL with a migration framework when the schema grows.
+- Add OpenAPI or protobuf definitions if you expose a versioned public API.

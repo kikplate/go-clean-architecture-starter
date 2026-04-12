@@ -2,6 +2,8 @@
 
 Go HTTP API starter using Chi, PostgreSQL, and layered boundaries between delivery, use cases, domain, and persistence.
 
+**Full documentation:** see the [docs](docs/README.md) folder (architecture, configuration, HTTP API, operations, and development).
+
 ## Layout
 
 - `cmd/api` service entrypoint

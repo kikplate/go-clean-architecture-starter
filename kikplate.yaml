@@ -2,6 +2,7 @@ name: Go Clean Architecture Starter
 description: HTTP API starter with Chi, PostgreSQL, layered clean architecture, health checks, graceful shutdown, and Docker deployment defaults.
 category: backend
 owner: kikplate-public
+verification_token: 637e926f-d3a3-42cc-9f5c-a80d1254415a
 tags:
   - golang
   - go

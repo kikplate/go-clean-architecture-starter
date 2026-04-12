@@ -1,4 +1,5 @@
 # go-clean-architecture-starter
+[![View on KikPlate](https://img.shields.io/static/v1?label=KikPlate&message=go-clean-architecture-starter&color=0366d6&style=flat-square)](https://kikplate.dev/plates/go-clean-architecture-starter)
 
 Go HTTP API starter using Chi, PostgreSQL, and layered boundaries between delivery, use cases, domain, and persistence.
 

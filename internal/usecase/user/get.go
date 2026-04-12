@@ -1,0 +1,19 @@
+package user
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+	"github.com/kikplate-plates/go-clean-architecture-starter/internal/domain"
+)
+
+type GetUser struct {
+	Repo domain.UserRepository
+}
+
+func (uc GetUser) Execute(ctx context.Context, id uuid.UUID) (domain.User, error) {
+	if id == uuid.Nil {
+		return domain.User{}, domain.ErrInvalidInput
+	}
+	return uc.Repo.GetByID(ctx, id)
+}

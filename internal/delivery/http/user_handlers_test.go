@@ -1,0 +1,220 @@
+package httpdelivery
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/kikplate-plates/go-clean-architecture-starter/internal/domain"
+	useruc "github.com/kikplate-plates/go-clean-architecture-starter/internal/usecase/user"
+)
+
+type memoryUserRepo struct {
+	byID    map[uuid.UUID]domain.User
+	byEmail map[string]domain.User
+}
+
+func newMemoryUserRepo() *memoryUserRepo {
+	return &memoryUserRepo{
+		byID:    map[uuid.UUID]domain.User{},
+		byEmail: map[string]domain.User{},
+	}
+}
+
+func (m *memoryUserRepo) Create(ctx context.Context, user domain.User) (domain.User, error) {
+	user = user.Normalize()
+	if _, ok := m.byEmail[user.Email]; ok {
+		return domain.User{}, domain.ErrConflict
+	}
+	m.byID[user.ID] = user
+	m.byEmail[user.Email] = user
+	return user, nil
+}
+
+func (m *memoryUserRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+	u, ok := m.byID[id]
+	if !ok {
+		return domain.User{}, domain.ErrNotFound
+	}
+	return u, nil
+}
+
+func TestUserHandlers_PostUser_InvalidJSON(t *testing.T) {
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: newMemoryUserRepo()},
+		Get:    useruc.GetUser{Repo: newMemoryUserRepo()},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader("{"))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.PostUser(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: %d", rec.Code)
+	}
+}
+
+func TestUserHandlers_PostUser_InvalidInput(t *testing.T) {
+	repo := newMemoryUserRepo()
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: repo},
+		Get:    useruc.GetUser{Repo: repo},
+	}
+	body := mustJSON(t, map[string]string{"email": "", "name": "n"})
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", body)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.PostUser(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: %d body: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestUserHandlers_PostUser_Conflict(t *testing.T) {
+	repo := newMemoryUserRepo()
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: repo},
+		Get:    useruc.GetUser{Repo: repo},
+	}
+	first := mustJSON(t, map[string]string{"email": "dup@example.com", "name": "a"})
+	rec1 := httptest.NewRecorder()
+	h.PostUser(rec1, httptest.NewRequest(http.MethodPost, "/v1/users", first))
+	if rec1.Code != http.StatusCreated {
+		t.Fatalf("first status: %d", rec1.Code)
+	}
+	second := mustJSON(t, map[string]string{"email": "dup@example.com", "name": "b"})
+	rec2 := httptest.NewRecorder()
+	h.PostUser(rec2, httptest.NewRequest(http.MethodPost, "/v1/users", second))
+	if rec2.Code != http.StatusConflict {
+		t.Fatalf("second status: %d", rec2.Code)
+	}
+}
+
+func TestUserHandlers_PostUser_Internal(t *testing.T) {
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: &boomRepo{}},
+		Get:    useruc.GetUser{Repo: newMemoryUserRepo()},
+	}
+	body := mustJSON(t, map[string]string{"email": "ok@example.com", "name": "n"})
+	rec := httptest.NewRecorder()
+	h.PostUser(rec, httptest.NewRequest(http.MethodPost, "/v1/users", body))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status: %d", rec.Code)
+	}
+}
+
+func TestUserHandlers_GetUser_InvalidID(t *testing.T) {
+	repo := newMemoryUserRepo()
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: repo},
+		Get:    useruc.GetUser{Repo: repo},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/not-a-uuid", nil)
+	rec := httptest.NewRecorder()
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "not-a-uuid")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	h.GetUser(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status: %d", rec.Code)
+	}
+}
+
+func TestUserHandlers_GetUser_NotFound(t *testing.T) {
+	repo := newMemoryUserRepo()
+	h := UserHandlers{
+		Create: useruc.CreateUser{Repo: repo},
+		Get:    useruc.GetUser{Repo: repo},
+	}
+	id := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/"+id.String(), nil)
+	rec := httptest.NewRecorder()
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", id.String())
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	h.GetUser(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status: %d", rec.Code)
+	}
+}
+
+func TestUserHandlers_CreateAndGet_ThroughRouter(t *testing.T) {
+	repo := newMemoryUserRepo()
+	handlers := UserHandlers{
+		Create: useruc.CreateUser{Repo: repo},
+		Get:    useruc.GetUser{Repo: repo},
+	}
+	rt := NewRouter(RouterDeps{
+		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+		RequestTimeout: 5 * time.Second,
+		DB:             stubPinger{},
+		UserHandlers:   handlers,
+	})
+	srv := httptest.NewServer(rt)
+	t.Cleanup(srv.Close)
+
+	createBody := mustJSON(t, map[string]string{"email": "flow@example.com", "name": "Flow"})
+	res, err := http.Post(srv.URL+"/v1/users", "application/json", createBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create status: %d", res.StatusCode)
+	}
+	var created userResponse
+	if err := json.NewDecoder(res.Body).Decode(&created); err != nil {
+		t.Fatal(err)
+	}
+	id, err := uuid.Parse(created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	getRes, err := http.Get(srv.URL + "/v1/users/" + id.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer getRes.Body.Close()
+	if getRes.StatusCode != http.StatusOK {
+		t.Fatalf("get status: %d", getRes.StatusCode)
+	}
+	var got userResponse
+	if err := json.NewDecoder(getRes.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Email != "flow@example.com" || got.Name != "Flow" {
+		t.Fatalf("unexpected: %+v", got)
+	}
+	if _, err := time.Parse("2006-01-02T15:04:05Z07:00", got.CreatedAt); err != nil {
+		t.Fatalf("created_at: %q err: %v", got.CreatedAt, err)
+	}
+}
+
+type boomRepo struct{}
+
+func (b *boomRepo) Create(ctx context.Context, user domain.User) (domain.User, error) {
+	return domain.User{}, errors.New("boom")
+}
+
+func (b *boomRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.User, error) {
+	return domain.User{}, errors.New("boom")
+}
+
+func mustJSON(t *testing.T, v any) *bytes.Reader {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes.NewReader(raw)
+}

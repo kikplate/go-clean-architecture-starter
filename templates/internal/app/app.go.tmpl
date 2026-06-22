@@ -1,0 +1,90 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"{{ .modulePath }}/internal/config"
+	httpdelivery "{{ .modulePath }}/internal/delivery/http"
+	"{{ .modulePath }}/internal/repository/postgres"
+	useruc "{{ .modulePath }}/internal/usecase/user"
+)
+
+type App struct {
+	cfg    config.Config
+	logger *slog.Logger
+	srv    *http.Server
+	pool   *pgxpool.Pool
+}
+
+func New(ctx context.Context, cfg config.Config) (*App, error) {
+	pool, err := postgres.Connect(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if err := postgres.Migrate(ctx, pool); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	logger := slog.Default()
+	userRepo := postgres.UserRepository{Pool: pool}
+	h := httpdelivery.UserHandlers{
+		Create: useruc.CreateUser{Repo: userRepo},
+		Get:    useruc.GetUser{Repo: userRepo},
+	}
+	handler := httpdelivery.NewRouter(httpdelivery.RouterDeps{
+		Logger:         logger,
+		RequestTimeout: cfg.RequestTimeout,
+		DB:             pool,
+		UserHandlers:   h,
+	})
+	srv := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	return &App{
+		cfg:    cfg,
+		logger: logger,
+		srv:    srv,
+		pool:   pool,
+	}, nil
+}
+
+func (a *App) Run(ctx context.Context, shutdownCtx context.Context) error {
+	a.srv.BaseContext = func(_ net.Listener) context.Context {
+		return ctx
+	}
+	errCh := make(chan error, 1)
+	go func() {
+		a.logger.Info("http_listen", slog.String("addr", a.srv.Addr))
+		if err := a.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+	select {
+	case <-ctx.Done():
+		a.logger.Info("shutdown_start")
+		if err := a.srv.Shutdown(shutdownCtx); err != nil {
+			_ = a.srv.Close()
+			a.pool.Close()
+			return fmt.Errorf("shutdown: %w", err)
+		}
+		a.pool.Close()
+		a.logger.Info("shutdown_complete")
+		return nil
+	case err := <-errCh:
+		a.pool.Close()
+		return err
+	}
+}

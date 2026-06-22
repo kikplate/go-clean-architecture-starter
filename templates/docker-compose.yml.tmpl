@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: {{ .databaseUser }}
+      POSTGRES_PASSWORD: {{ .databasePassword }}
+      POSTGRES_DB: {{ .databaseName }}
+    ports:
+      - "{{ .databasePort }}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    environment:
+      HTTP_ADDR: ":{{ .apiPort }}"
+      DATABASE_URL: postgres://{{ .databaseUser }}:{{ .databasePassword }}@db:5432/{{ .databaseName }}?sslmode=disable
+      LOG_LEVEL: {{ .logLevel }}
+    ports:
+      - "{{ .apiPort }}:{{ .apiPort }}"
+    depends_on:
+      db:
+        condition: service_healthy

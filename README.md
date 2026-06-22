@@ -1,54 +1,34 @@
 # go-clean-architecture-starter
-[![View on KikPlate](https://img.shields.io/static/v1?label=KikPlate&message=go-clean-architecture-starter&color=0366d6&style=flat-square)](https://kikplate.dev/plates/go-clean-architecture-starter)
 
-Go HTTP API starter using Chi, PostgreSQL, and layered boundaries between delivery, use cases, domain, and persistence.
+This repository is a Kikplate template for generating a Go HTTP API starter with Chi PostgreSQL layered clean architecture health checks graceful shutdown and Docker deployment defaults.
 
-**Full documentation:** see the [docs](docs/README.md) folder (architecture, configuration, HTTP API, operations, and development).
+The template is defined by plate.yaml values.yaml and the files inside templates with tmpl extensions. You can customize the project name module path Go version API port database settings runtime timeouts and optional modules through the schema in plate.yaml.
 
-## Layout
+## Build locally from this template
 
-- `cmd/api` service entrypoint
-- `internal/delivery/http` routing and HTTP adapters
-- `internal/usecase` application workflows
-- `internal/domain` entities and repository ports
-- `internal/repository/postgres` PostgreSQL adapters
-- `internal/config` environment-backed configuration
-- `internal/app` composition and server lifecycle
-
-## Run locally
+Run this command from the repository root.
 
 ```bash
+kik generate --template . -f values.yaml --output-dir ./generated-project
+```
+
+This generates a project in generated-project using the local template files.
+
+## Generate from Kikplate server
+
+Run this command when using the published template name.
+
+```bash
+kik generate go-clean-architecture-starter -f values.yaml
+```
+
+This generates the same project shape using the remote template registry source.
+
+## How to use the generated project
+
+Change into the generated project directory then start the stack with Docker Compose or run the Go service directly after exporting the environment variables.
+
+```bash
+cd generated-project
 docker compose up --build
 ```
-
-## Configure
-
-Copy `.env.example` to `.env` and adjust values. Required environment variable:
-
-- `DATABASE_URL`
-
-Optional:
-
-- `HTTP_ADDR` (default `:8080`)
-- `LOG_LEVEL` (`info` or `debug`)
-- `REQUEST_TIMEOUT_MS`
-- `SHUTDOWN_TIMEOUT_MS`
-
-## HTTP surface
-
-- `GET /healthz`
-- `GET /readyz`
-- `POST /v1/users` JSON body `{"email":"...","name":"..."}`
-- `GET /v1/users/{id}`
-
-## Tests
-
-```bash
-make test
-```
-
-Fast tests cover configuration parsing, domain normalization, use cases, HTTP handlers, and routing behavior. PostgreSQL repository tests run when `DATABASE_URL` is set (for example in CI or with `docker compose up -d db` and a local DSN). Without `DATABASE_URL`, those tests are skipped so `go test ./...` stays usable on laptops without a database.
-
-## Kikplate manifest
-
-This repository includes `kikplate.yaml` for registry metadata. Set `owner` to your GitHub username before submitting the plate. After submission, add `verification_token` from Kikplate and run verification.

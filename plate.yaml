@@ -1,0 +1,146 @@
+name: go-clean-architecture-starter
+owner: kikplate-public
+description: HTTP API starter with Chi, PostgreSQL, layered clean architecture, health checks, graceful shutdown, and Docker deployment defaults.
+version: 1.0.0
+verification_token: 637e926f-d3a3-42cc-9f5c-a80d1254415a
+
+category: backend
+
+tags:
+  - golang
+  - go
+  - chi
+  - clean-architecture
+  - rest
+  - postgresql
+  - docker
+
+schema:
+  projectName:
+    type: string
+    default: go-clean-architecture-starter
+  modulePath:
+    type: string
+    default: github.com/kikplate-plates/go-clean-architecture-starter
+  projectDescription:
+    type: string
+    default: HTTP API starter with Chi, PostgreSQL, layered clean architecture, health checks, graceful shutdown, and Docker deployment defaults.
+  goVersion:
+    type: string
+    default: "1.23"
+  apiPort:
+    type: int
+    default: 8080
+  databaseName:
+    type: string
+    default: app
+  databaseUser:
+    type: string
+    default: app
+  databasePassword:
+    type: string
+    default: app
+  databasePort:
+    type: int
+    default: 5432
+  logLevel:
+    type: enum
+    values:
+      - info
+      - debug
+    default: info
+  requestTimeoutMs:
+    type: int
+    default: 15000
+  shutdownTimeoutMs:
+    type: int
+    default: 20000
+
+modules:
+  docker:
+    enabled: true
+  postgres:
+    enabled: true
+  tests:
+    enabled: true
+  ci:
+    enabled: true
+
+files:
+  - path: .dockerignore
+    template: templates/.dockerignore.tmpl
+    condition: modules.docker.enabled
+  - path: .env.example
+    template: templates/.env.example.tmpl
+  - path: .gitignore
+    template: templates/.gitignore.tmpl
+  - path: .github/workflows/ci.yml
+    template: templates/.github/workflows/ci.yml.tmpl
+    condition: modules.ci.enabled
+  - path: Dockerfile
+    template: templates/Dockerfile.tmpl
+    condition: modules.docker.enabled
+  - path: LICENSE
+    template: templates/LICENSE.tmpl
+  - path: Makefile
+    template: templates/Makefile.tmpl
+  - path: README.md
+    template: templates/README.md.tmpl
+  - path: cmd/api/main.go
+    template: templates/cmd/api/main.go.tmpl
+  - path: docker-compose.yml
+    template: templates/docker-compose.yml.tmpl
+    condition: modules.docker.enabled
+  - path: docs/README.md
+    template: templates/docs/README.md.tmpl
+  - path: docs/architecture.md
+    template: templates/docs/architecture.md.tmpl
+  - path: docs/configuration.md
+    template: templates/docs/configuration.md.tmpl
+  - path: docs/development.md
+    template: templates/docs/development.md.tmpl
+  - path: docs/http-api.md
+    template: templates/docs/http-api.md.tmpl
+  - path: docs/operations.md
+    template: templates/docs/operations.md.tmpl
+  - path: go.mod
+    template: templates/go.mod.tmpl
+  - path: internal/app/app.go
+    template: templates/internal/app/app.go.tmpl
+  - path: internal/config/config.go
+    template: templates/internal/config/config.go.tmpl
+  - path: internal/delivery/http/encode.go
+    template: templates/internal/delivery/http/encode.go.tmpl
+  - path: internal/delivery/http/router.go
+    template: templates/internal/delivery/http/router.go.tmpl
+  - path: internal/delivery/http/router_test.go
+    template: templates/internal/delivery/http/router_test.go.tmpl
+  - path: internal/delivery/http/user_handlers.go
+    template: templates/internal/delivery/http/user_handlers.go.tmpl
+  - path: internal/delivery/http/user_handlers_test.go
+    template: templates/internal/delivery/http/user_handlers_test.go.tmpl
+  - path: internal/domain/errors.go
+    template: templates/internal/domain/errors.go.tmpl
+  - path: internal/domain/user.go
+    template: templates/internal/domain/user.go.tmpl
+  - path: internal/domain/repository.go
+    template: templates/internal/domain/repository.go.tmpl
+  - path: internal/domain/user_test.go
+    template: templates/internal/domain/user_test.go.tmpl
+  - path: internal/repository/postgres/db.go
+    template: templates/internal/repository/postgres/db.go.tmpl
+  - path: internal/repository/postgres/migrate.go
+    template: templates/internal/repository/postgres/migrate.go.tmpl
+  - path: internal/repository/postgres/user_repository.go
+    template: templates/internal/repository/postgres/user_repository.go.tmpl
+  - path: internal/repository/postgres/user_repository_test.go
+    template: templates/internal/repository/postgres/user_repository_test.go.tmpl
+    condition: modules.postgres.enabled
+  - path: internal/usecase/user/create.go
+    template: templates/internal/usecase/user/create.go.tmpl
+  - path: internal/usecase/user/create_test.go
+    template: templates/internal/usecase/user/create_test.go.tmpl
+  - path: internal/usecase/user/get.go
+    template: templates/internal/usecase/user/get.go.tmpl
+  - path: internal/usecase/user/get_test.go
+    template: templates/internal/usecase/user/get_test.go.tmpl

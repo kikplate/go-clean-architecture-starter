@@ -1,5 +1,5 @@
 services:
-  db:
+  {{ if .modules.postgres.enabled }}db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: {{ .databaseUser }}
@@ -13,14 +13,15 @@ services:
       timeout: 3s
       retries: 20
 
-  api:
+  {{ end }}api:
     build: .
     environment:
       HTTP_ADDR: ":{{ .apiPort }}"
-      DATABASE_URL: postgres://{{ .databaseUser }}:{{ .databasePassword }}@db:5432/{{ .databaseName }}?sslmode=disable
-      LOG_LEVEL: {{ .logLevel }}
+      {{ if .modules.postgres.enabled }}DATABASE_URL: postgres://{{ .databaseUser }}:{{ .databasePassword }}@db:5432/{{ .databaseName }}?sslmode=disable
+      {{ end }}LOG_LEVEL: {{ .logLevel }}
     ports:
       - "{{ .apiPort }}:{{ .apiPort }}"
-    depends_on:
+    {{ if .modules.postgres.enabled }}depends_on:
       db:
         condition: service_healthy
+    {{ end }}

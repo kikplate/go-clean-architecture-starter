@@ -12,14 +12,13 @@ Liveness: process is up. No database check.
 
 ### `GET /readyz`
 
-Readiness: PostgreSQL reachable with `Ping` on the application pool.
-
-| Status | Body |
+{{ if .modules.postgres.enabled }}Readiness: PostgreSQL reachable with `Ping` on the application pool.
+{{ end }}| Status | Body |
 |--------|------|
 | `200` | `ready` (plain text) |
 | `503` | `not_ready` (plain text) |
 
-## Users (`/v1`)
+{{ if .modules.postgres.enabled }}## Users (`/v1`)
 
 ### `POST /v1/users`
 
@@ -76,3 +75,4 @@ curl -sS -X POST http://localhost:8080/v1/users \
 ```bash
 curl -sS http://localhost:8080/v1/users/00000000-0000-0000-0000-000000000001
 ```
+{{ end }}

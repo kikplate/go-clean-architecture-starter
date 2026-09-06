@@ -72,6 +72,7 @@ files:
     condition: modules.docker.enabled
   - path: .env.example
     template: templates/.env.example.tmpl
+    condition: modules.postgres.enabled
   - path: .gitignore
     template: templates/.gitignore.tmpl
   - path: .github/workflows/ci.yml
@@ -90,19 +91,23 @@ files:
     template: templates/cmd/api/main.go.tmpl
   - path: docker-compose.yml
     template: templates/docker-compose.yml.tmpl
-    condition: modules.docker.enabled
+    condition: modules.postgres.enabled
   - path: docs/README.md
     template: templates/docs/README.md.tmpl
   - path: docs/architecture.md
     template: templates/docs/architecture.md.tmpl
   - path: docs/configuration.md
     template: templates/docs/configuration.md.tmpl
+    condition: modules.postgres.enabled
   - path: docs/development.md
     template: templates/docs/development.md.tmpl
+    condition: modules.postgres.enabled
   - path: docs/http-api.md
     template: templates/docs/http-api.md.tmpl
+    condition: modules.postgres.enabled
   - path: docs/operations.md
     template: templates/docs/operations.md.tmpl
+    condition: modules.postgres.enabled
   - path: go.mod
     template: templates/go.mod.tmpl
   - path: internal/app/app.go
@@ -115,32 +120,46 @@ files:
     template: templates/internal/delivery/http/router.go.tmpl
   - path: internal/delivery/http/router_test.go
     template: templates/internal/delivery/http/router_test.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/delivery/http/user_handlers.go
     template: templates/internal/delivery/http/user_handlers.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/delivery/http/user_handlers_test.go
     template: templates/internal/delivery/http/user_handlers_test.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/domain/errors.go
     template: templates/internal/domain/errors.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/domain/user.go
     template: templates/internal/domain/user.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/domain/repository.go
     template: templates/internal/domain/repository.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/domain/user_test.go
     template: templates/internal/domain/user_test.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/repository/postgres/db.go
     template: templates/internal/repository/postgres/db.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/repository/postgres/migrate.go
     template: templates/internal/repository/postgres/migrate.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/repository/postgres/user_repository.go
     template: templates/internal/repository/postgres/user_repository.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/repository/postgres/user_repository_test.go
     template: templates/internal/repository/postgres/user_repository_test.go.tmpl
     condition: modules.postgres.enabled
   - path: internal/usecase/user/create.go
     template: templates/internal/usecase/user/create.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/usecase/user/create_test.go
     template: templates/internal/usecase/user/create_test.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/usecase/user/get.go
     template: templates/internal/usecase/user/get.go.tmpl
+    condition: modules.postgres.enabled
   - path: internal/usecase/user/get_test.go
     template: templates/internal/usecase/user/get_test.go.tmpl
+    condition: modules.postgres.enabled

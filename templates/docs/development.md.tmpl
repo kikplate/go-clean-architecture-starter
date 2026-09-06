@@ -3,7 +3,8 @@
 ## Requirements
 
 - Go 1.23 or newer (see `go.mod`)
-- PostgreSQL 16 compatible server (for integration tests and local runs outside Docker)
+{{ if .modules.postgres.enabled }}- PostgreSQL 16 compatible server (for integration tests and local runs outside Docker)
+{{ end }}
 
 ## Module path
 
@@ -21,7 +22,7 @@ make test
 ```
 
 Package tests cover configuration, domain rules, use cases, and HTTP behavior without a real database where possible.
-
+{{ if .modules.postgres.enabled }}
 PostgreSQL repository tests in `internal/repository/postgres` run only when `DATABASE_URL` is set. In GitHub Actions the workflow provides Postgres as a service and sets `DATABASE_URL` so those tests execute on every push and pull request.
 
 To run them locally:
@@ -34,6 +35,7 @@ go test -race ./...
 ## Continuous integration
 
 Workflow: `.github/workflows/ci.yml`. It installs Go, starts Postgres, downloads modules, and runs `go test -race ./...`.
+{{ end }}
 
 ## Suggested next steps for contributors
 

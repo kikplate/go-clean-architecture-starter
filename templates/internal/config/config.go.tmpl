@@ -1,32 +1,32 @@
 package config
 
 import (
-	"fmt"
-	"os"
+	{{ if .modules.postgres.enabled }}"fmt"
+	{{ end }}"os"
 	"strconv"
 	"time"
 )
 
 type Config struct {
-	HTTPAddr         string
-	DatabaseURL      string
-	ShutdownTimeout  time.Duration
-	LogLevel         string
-	RequestTimeout   time.Duration
+	HTTPAddr        string
+	{{ if .modules.postgres.enabled }}DatabaseURL     string
+	{{ end }}ShutdownTimeout time.Duration
+	LogLevel        string
+	RequestTimeout  time.Duration
 }
 
 func Load() (Config, error) {
 	cfg := Config{
 		HTTPAddr:        getenv("HTTP_ADDR", ":{{ .apiPort }}"),
-		DatabaseURL:     os.Getenv("DATABASE_URL"),
-		LogLevel:        getenv("LOG_LEVEL", "{{ .logLevel }}"),
+		{{ if .modules.postgres.enabled }}DatabaseURL:     os.Getenv("DATABASE_URL"),
+		{{ end }}LogLevel:        getenv("LOG_LEVEL", "{{ .logLevel }}"),
 		RequestTimeout:  durationEnv("REQUEST_TIMEOUT_MS", {{ .requestTimeoutMs }}),
 		ShutdownTimeout: durationEnv("SHUTDOWN_TIMEOUT_MS", {{ .shutdownTimeoutMs }}),
 	}
-	if cfg.DatabaseURL == "" {
+	{{ if .modules.postgres.enabled }}if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
-	return cfg, nil
+	{{ end }}return cfg, nil
 }
 
 func getenv(key, fallback string) string {

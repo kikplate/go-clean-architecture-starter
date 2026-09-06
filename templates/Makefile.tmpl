@@ -1,4 +1,4 @@
-.PHONY: tidy test run docker-up docker-down
+.PHONY: tidy test run{{ if .modules.postgres.enabled }} docker-up docker-down{{ end }}
 
 tidy:
 	go mod tidy
@@ -8,7 +8,6 @@ test:
 
 run:
 	go run ./cmd/api
-
 docker-up:
 	docker compose up --build
 

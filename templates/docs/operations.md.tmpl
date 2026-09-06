@@ -1,6 +1,6 @@
 # Operations
 
-## Docker Compose
+{{ if .modules.postgres.enabled }}## Docker Compose
 
 From the repository root:
 
@@ -14,6 +14,7 @@ Services:
 - `api`: built from the `Dockerfile`, listens on host port `8080` unless you change port mappings.
 
 The API container waits for the database healthcheck before starting.
+{{ end }}
 
 ## Single binary image
 
@@ -25,7 +26,7 @@ The `Dockerfile` produces a static Linux `amd64` binary and runs it as a non-roo
 |--------|--------|
 | `make tidy` | `go mod tidy` |
 | `make test` | `go test -race ./...` |
-| `make run` | `go run ./cmd/api` (requires `DATABASE_URL` in the environment) |
+| `make run` | `go run ./cmd/api`{{ if .modules.postgres.enabled }} (requires `DATABASE_URL` in the environment){{ end }} |
 
 ## Graceful shutdown
 
